@@ -11,12 +11,16 @@ public class MinioConfig {
 
     @Value("${minio.endpoint}")
     private String endpoint;
+    @Value("${minio.access.key}")
+    private String accessKey;
+    @Value("${minio.secret.key}")
+    private String secretKey;
 
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
                 .endpoint(endpoint)
-                .credentials("minioadmin", "minioadmin")
+                .credentials(accessKey, secretKey)
                 .build();
     }
 }

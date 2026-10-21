@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Optional;
 
 public class UserServiceIntegrationTest extends AbstractIntegrationTest {
-
     @Autowired
     private UserService userService;
 

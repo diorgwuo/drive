@@ -9,5 +9,4 @@ public class Drive2Application {
     public static void main(String[] args) {
         SpringApplication.run(Drive2Application.class, args);
     }
-
 }
