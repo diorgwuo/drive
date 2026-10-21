@@ -6,10 +6,6 @@ import com.yuldashov.drive2.repository.UserRepository;
 import io.minio.errors.MinioException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,20 +27,18 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findUserByUsername(username)
+        return userRepository.findUserByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден: " + username));
-        return user;
     }
 
     @Transactional
     public String register(User user) throws MinioException {
         String username = user.getUsername();
-        if (userRepository.findUserByUsername(username).isPresent()) {
+        if (userRepository.existsByUsername(username)) {
             throw new UserAlreadyExistException("Username уже занят");
         }
         String rawPassword = user.getPassword();
-        String password = passwordEncoder.encode(rawPassword);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(rawPassword));
         User savedUser = userRepository.save(user);
         resourceService.createUserBucket(savedUser.getId());
         return user.getUsername();
