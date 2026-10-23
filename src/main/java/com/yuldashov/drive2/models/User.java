@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Entity
 @Table(name="users")
+@NoArgsConstructor
 public class User implements UserDetails {
     @Getter
     @Id
@@ -29,8 +31,6 @@ public class User implements UserDetails {
     private String password;
     @Column(nullable = false)
     private boolean enabled = true;
-
-    public User() {}
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

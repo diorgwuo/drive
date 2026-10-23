@@ -7,6 +7,9 @@ import com.yuldashov.drive2.support.AbstractIntegrationTest;
 import io.minio.errors.MinioException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -24,12 +27,10 @@ public class UserServiceIntegrationTest extends AbstractIntegrationTest {
         User user = new User();
         user.setUsername("testUser");
         user.setPassword("test1234");
-
-
-        String username = userService.register(user);
-
-        Optional<User> savedUser = userRepository.findUserByUsername(username);
-
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        userService.register("testUser", "test1234", response, request);
+        Optional<User> savedUser = userRepository.findUserByUsername(user.getUsername());
         assertThat(savedUser).isPresent();
         assertThat(savedUser.get().getUsername()).isEqualTo("testUser");
         assertThat(savedUser.get().getId()).isPositive();
@@ -41,12 +42,9 @@ public class UserServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void passwordShouldEncoded() throws MinioException {
-        User user = new User();
-        user.setUsername("testPassword");
-        user.setPassword("password1256");
-
-        userService.register(user);
-
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        userService.register("testPassword", "password1256", response, request);
         Optional<User> savedUser = userRepository.findUserByUsername("testPassword");
 
         assertThat(savedUser).isPresent();
@@ -56,15 +54,12 @@ public class UserServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void usernameShouldBeUnique() throws MinioException {
-        User user1 = new User();
-        user1.setUsername("user1");
-        user1.setPassword("user1235");
-        userService.register(user1);
-
-        User user2 = new User();
-        user2.setUsername("user1");
-        user2.setPassword("user2135");
-        assertThatThrownBy(() -> userService.register(user2))
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        userService.register("user1", "user1235", response, request);
+        MockHttpServletRequest request2 = new MockHttpServletRequest();
+        MockHttpServletResponse response2 = new MockHttpServletResponse();
+        assertThatThrownBy(() -> userService.register("user1", "user2135", response2, request2))
                 .isInstanceOf(UserAlreadyExistException.class)
                 .hasMessageContaining("Username уже занят");
     }

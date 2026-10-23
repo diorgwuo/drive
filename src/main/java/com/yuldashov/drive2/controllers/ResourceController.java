@@ -4,6 +4,8 @@ import com.yuldashov.drive2.dto.ResponseResource;
 import com.yuldashov.drive2.service.ResourceService;
 import com.yuldashov.drive2.util.PathUtils;
 import io.minio.errors.MinioException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @RestController
@@ -28,7 +31,7 @@ public class ResourceController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseResource getResource(
             @RequestParam("path")
-            @NotBlank(message= "Путь невалидный или отсутствует")
+            @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
             Authentication auth
     ) throws MinioException {
@@ -39,23 +42,25 @@ public class ResourceController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseResource createDirectory(
             @RequestParam("path")
-            @NotBlank(message="Путь невалидный или отсутствует")
+            @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
             Authentication auth) throws MinioException {
         return resourceService.createDirectory(auth, path);
     }
 
-    @PostMapping("/resource")
+    @PostMapping(value = "/resource", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseResource uploadResource(
             @RequestParam("path")
-            @NotBlank(message="Путь невалидный или отсутствует")
+            @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            @RequestParam("file")
-            @NotBlank(message = "Невалидное тело запроса")
-            MultipartFile file,
+            @RequestParam("filename")
+            @NotBlank(message = "Название файла не может быть пустым")
+            String filename,
+            HttpServletRequest request,
             Authentication auth) throws MinioException, IOException {
-        return resourceService.uploadResource(auth, path, file);
+        return resourceService.uploadResource(auth, path, filename,
+                request.getInputStream(), request.getContentLengthLong());
     }
 
     @GetMapping("/directory")
@@ -102,15 +107,15 @@ public class ResourceController {
     }
 
     @GetMapping("/resource/download")
-    public ResponseEntity<?> downloadResource(
-        @RequestParam("path")
-        @NotBlank(message = "Путь невалидный или отсутствует")
-        String path,
-        Authentication auth) throws MinioException, IOException {
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + PathUtils.getNameForZip(path) + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resourceService.downloadResource(path, auth));
+    @ResponseStatus(HttpStatus.OK)
+    public void downloadResource(
+            @RequestParam("path")
+            @NotBlank(message = "Путь невалидный или отсутствует")
+            String path,
+            HttpServletResponse response,
+            Authentication auth) throws MinioException, IOException {
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + PathUtils.getNameForZip(path) + "\"");
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        resourceService.downloadResource(path, auth, response.getOutputStream());
     }
 }

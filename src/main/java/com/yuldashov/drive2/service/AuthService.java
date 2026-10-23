@@ -3,6 +3,7 @@ package com.yuldashov.drive2.service;
 import com.yuldashov.drive2.exceptions.InvalidCredentialsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -16,13 +17,9 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
     private final AuthenticationManager authenticationManager;
-
-    @Autowired
-    public AuthService(AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-    }
 
     public void autoLogin(String username, String rawPassword,
                           HttpServletResponse response,

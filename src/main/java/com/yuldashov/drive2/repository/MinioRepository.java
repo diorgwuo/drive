@@ -5,11 +5,13 @@ import io.minio.errors.ErrorResponseException;
 import io.minio.errors.MinioException;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Repository;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
-@Component
+@Repository
 @RequiredArgsConstructor
 public class MinioRepository {
     private final MinioClient minioClient;
@@ -40,6 +42,21 @@ public class MinioRepository {
         );
     }
 
+    public void saveObject(String path, InputStream stream, Long size) throws MinioException {
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(BUCKET_NAME)
+                            .object(path)
+                            .stream(stream, size, -1L)
+                            .contentType(MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new MinioException("Ошибка загрузки файла", e);
+        }
+    }
+
     public boolean exists(String path) throws MinioException {
         try {
             minioClient.statObject(
@@ -50,8 +67,7 @@ public class MinioRepository {
             );
             return true;
 
-        } catch (
-                ErrorResponseException e) {
+        } catch (ErrorResponseException e) {
             return false;
         }
     }
