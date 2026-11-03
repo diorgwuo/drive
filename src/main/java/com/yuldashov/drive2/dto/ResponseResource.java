@@ -11,18 +11,19 @@ public class ResponseResource {
     private String path;
     private String name;
     private Long size;
-    private String type;
+    private ResourceType type;
+
 
     public ResponseResource(String path, String name, Long size) {
         this.path = path;
         this.name = name;
         this.size = size;
-        this.type = "FILE";
+        this.type = ResourceType.FILE;
     }
 
     public ResponseResource(String path, String name) {
         this.path = path;
         this.name = name;
-        this.type = "DIRECTORY";
+        this.type = ResourceType.DIRECTORY;
     }
 }

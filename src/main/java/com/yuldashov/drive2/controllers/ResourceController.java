@@ -1,6 +1,7 @@
 package com.yuldashov.drive2.controllers;
 
 import com.yuldashov.drive2.dto.ResponseResource;
+import com.yuldashov.drive2.models.User;
 import com.yuldashov.drive2.service.ResourceService;
 import com.yuldashov.drive2.util.PathUtils;
 import io.minio.errors.MinioException;
@@ -11,18 +12,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 @RestController
-@Validated
 @RequiredArgsConstructor
 public class ResourceController {
     private final ResourceService resourceService;
@@ -33,9 +29,9 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            Authentication auth
+            @AuthenticationPrincipal User user
     ) throws MinioException {
-        return resourceService.getResource(auth, path);
+        return resourceService.getResource(user, path);
     }
 
     @PostMapping(value = "/directory")
@@ -44,8 +40,8 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            Authentication auth) throws MinioException {
-        return resourceService.createDirectory(auth, path);
+            @AuthenticationPrincipal User user) throws MinioException {
+        return resourceService.createDirectory(user, path);
     }
 
     @PostMapping(value = "/resource", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -58,8 +54,8 @@ public class ResourceController {
             @NotBlank(message = "Название файла не может быть пустым")
             String filename,
             HttpServletRequest request,
-            Authentication auth) throws MinioException, IOException {
-        return resourceService.uploadResource(auth, path, filename,
+            @AuthenticationPrincipal User user) throws MinioException, IOException {
+        return resourceService.uploadResource(user, path, filename,
                 request.getInputStream(), request.getContentLengthLong());
     }
 
@@ -69,8 +65,8 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            Authentication auth) throws MinioException {
-        return resourceService.getDirectoryInfo(auth, path);
+            @AuthenticationPrincipal User user) throws MinioException {
+        return resourceService.getDirectoryInfo(user, path);
     }
 
     @GetMapping("/resource/search")
@@ -79,8 +75,8 @@ public class ResourceController {
             @RequestParam("query")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String query,
-            Authentication auth) throws MinioException {
-        return resourceService.searchResource(query, auth);
+            @AuthenticationPrincipal User user) throws MinioException {
+        return resourceService.searchResource(query, user);
     }
 
     @GetMapping("/resource/move")
@@ -92,8 +88,8 @@ public class ResourceController {
             @RequestParam("to")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String to,
-            Authentication auth) throws MinioException {
-        return resourceService.moveResource(from, to, auth);
+            @AuthenticationPrincipal User user) throws MinioException {
+        return resourceService.moveResource(from, to, user);
     }
 
     @DeleteMapping("/resource")
@@ -102,8 +98,8 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            Authentication auth) throws MinioException {
-        resourceService.deleteResource(path, auth);
+            @AuthenticationPrincipal User user) throws MinioException {
+        resourceService.deleteResource(path, user);
     }
 
     @GetMapping("/resource/download")
@@ -113,9 +109,9 @@ public class ResourceController {
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
             HttpServletResponse response,
-            Authentication auth) throws MinioException, IOException {
+            @AuthenticationPrincipal User user) throws MinioException, IOException {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + PathUtils.getNameForZip(path) + "\"");
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        resourceService.downloadResource(path, auth, response.getOutputStream());
+        resourceService.downloadResource(path, user, response.getOutputStream());
     }
 }

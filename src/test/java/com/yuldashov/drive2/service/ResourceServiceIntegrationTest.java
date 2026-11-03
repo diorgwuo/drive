@@ -10,9 +10,9 @@ import com.yuldashov.drive2.support.AbstractIntegrationTest;
 import io.minio.*;
 import io.minio.errors.MinioException;
 import io.minio.messages.Item;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,18 +27,15 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@RequiredArgsConstructor
 public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
-    @Autowired
     private ResourceService resourceService;
-    @Autowired
     private MinioClient minioClient;
-    @Autowired
     private UserService userService;
-    @Autowired
     private MinioRepository minioRepository;
-    @Autowired
     private UserRepository userRepository;
+    private CustomUserDetailsService userDetailsService;
 
     private User testUser;
     private String userFolder;
@@ -52,7 +49,9 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         userService.register("testUser", "testuser", response, request);
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 testUser, null);
-        testUser = userService.validate(auth);
+        testUser = new User();
+        testUser.setUsername("testUser");
+        testUser.setPassword("testuser");
 
         userFolder = "user-" + testUser.getId() + "-files";
     }
@@ -82,15 +81,13 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void fileUpload() throws MinioException, IOException {
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                testUser, null);
         String path = "test1/";
         String content = "test1234";
         String filename = "test.txt";
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 
-        resourceService.uploadResource(auth, path, filename, stream, (long) contentBytes.length);
+        resourceService.uploadResource(testUser, path, filename, stream, (long) contentBytes.length);
 
         String objectPath = userFolder + "/" + path + "test.txt";
 
@@ -108,8 +105,6 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void renameResource() throws MinioException, IOException {
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                testUser, null);
         String from = "test1/test.txt";
         String to = "test1/dior.txt";
 
@@ -119,8 +114,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 
-        resourceService.uploadResource(auth, path, filename, stream, (long) contentBytes.length);
-        resourceService.moveResource(from, to, auth);
+        resourceService.uploadResource(testUser, path, filename, stream, (long) contentBytes.length);
+        resourceService.moveResource(from, to, testUser);
 
         assertThat(minioRepository.exists(userFolder + "/" + from)).isFalse();
         assertThat(minioRepository.exists(userFolder + "/" + to)).isTrue();
@@ -128,8 +123,6 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void deleteFile() throws MinioException, IOException {
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                testUser, null);
         String path = "test1/test.txt";
         String fullPath = userFolder + "/" + path;
 
@@ -138,11 +131,11 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 
-        resourceService.uploadResource(auth, path, filename, stream, (long) contentBytes.length);
+        resourceService.uploadResource(testUser, path, filename, stream, (long) contentBytes.length);
 
         assertThat(minioRepository.exists(fullPath)).isTrue();
 
-        resourceService.deleteResource(path, auth);
+        resourceService.deleteResource(path, testUser);
 
         assertThat(minioRepository.exists(fullPath)).isFalse();
 
@@ -150,17 +143,13 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void deleteDirectory() throws MinioException, IOException {
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                testUser, null
-        );
-
         String parentPath = "test1/";
-        resourceService.createDirectory(auth, parentPath);
+        resourceService.createDirectory(testUser, parentPath);
 
         String path = "test1/test2/";
         String fullPath = userFolder + "/" + path;
 
-        resourceService.createDirectory(auth, path);
+        resourceService.createDirectory(testUser, path);
 
         assertThat(minioRepository.exists(fullPath)).isTrue();
 
@@ -170,11 +159,11 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 
-        resourceService.uploadResource(auth, path, filename, stream, (long) contentBytes.length);
+        resourceService.uploadResource(testUser, path, filename, stream, (long) contentBytes.length);
 
         assertThat(minioRepository.exists(userFolder + "/" + pathFile + "test.txt")).isTrue();
 
-        resourceService.deleteResource(path, auth);
+        resourceService.deleteResource(path, testUser);
 
         assertThat(minioRepository.exists(fullPath)).isFalse();
         assertThat(minioRepository.exists(userFolder + "/" + pathFile + "test.txt")).isFalse();
@@ -182,15 +171,12 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void checkAccess() throws MinioException, IOException {
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-               testUser, null);
         MockHttpServletRequest request2 = new MockHttpServletRequest();
         MockHttpServletResponse response2 = new MockHttpServletResponse();
+        User testUser2 = new User();
+        testUser2.setUsername("testUser2");
+        testUser2.setPassword("testuser");
         userService.register("testUser2", "testuser", response2, request2);
-        User testUser2 = userService.validate(auth);
-        Authentication auth2 = new UsernamePasswordAuthenticationToken(
-                testUser2, null
-        );
         String userFolder2 = "user-" + testUser2.getId() + "-files";
 
         String content = "test1234";
@@ -198,11 +184,11 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 
-        resourceService.uploadResource(auth, "", filename, stream, (long) contentBytes.length);
+        resourceService.uploadResource(testUser, "", filename, stream, (long) contentBytes.length);
 
         assertThat(minioRepository.exists(userFolder2 + "/test.txt")).isTrue();
 
-        assertThatThrownBy(() -> resourceService.getResource(auth, "test.txt"))
+        assertThatThrownBy(() -> resourceService.getResource(testUser, "test.txt"))
                 .isInstanceOf(ResourceNotFoundException.class);
 
         assertThat(minioRepository.exists(userFolder2 + "/test.txt")).isTrue();
@@ -211,16 +197,12 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     public void searchUserFilesShouldCorrect() throws MinioException, IOException {
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                testUser, null
-        );
         MockHttpServletRequest request2 = new MockHttpServletRequest();
         MockHttpServletResponse response2 = new MockHttpServletResponse();
         userService.register("testUser2", "testuser" , response2, request2);
-        User testUser2 = userService.validate(auth);
-        Authentication auth2 = new UsernamePasswordAuthenticationToken(
-                testUser2, null
-        );
+        User testUser2 = new User();
+        testUser2.setUsername("testUser2");
+        testUser2.setPassword("testuser");
         String userFolder2 = "user-" + testUser2.getId() + "-files";
 
         String content = "dior1234";
@@ -228,12 +210,12 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 
-        resourceService.uploadResource(auth, "", filename, stream, (long) contentBytes.length);
+        resourceService.uploadResource(testUser, "", filename, stream, (long) contentBytes.length);
 
         assertThat(minioRepository.exists(userFolder2 + "/")).isTrue();
 
-        List<ResponseResource> responseResource = resourceService.searchResource("dior.txt", auth2);
-        List<ResponseResource> responseResource2 = resourceService.searchResource("dior.txt", auth);
+        List<ResponseResource> responseResource = resourceService.searchResource("dior.txt", testUser2);
+        List<ResponseResource> responseResource2 = resourceService.searchResource("dior.txt", testUser);
 
         assertThat(responseResource).isNotEmpty();
         assertThat(responseResource.get(0).getName()).isEqualTo("dior.txt");

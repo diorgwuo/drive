@@ -1,9 +1,6 @@
 package com.yuldashov.drive2.config;
 
-import com.yuldashov.drive2.service.UserService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import com.yuldashov.drive2.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -35,7 +32,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/register","/api/v1/login", "/api/v1/test" ).permitAll()
+                .requestMatchers("/register","/login", "/test" ).permitAll()
                 .anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout
@@ -58,7 +55,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http, UserService userService) throws Exception {
+    public AuthenticationManager authenticationManager(HttpSecurity http, CustomUserDetailsService userService) throws Exception {
         AuthenticationManagerBuilder auth = http.getSharedObject(AuthenticationManagerBuilder.class);
         auth
                 .userDetailsService(userService)

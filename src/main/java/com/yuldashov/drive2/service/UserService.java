@@ -1,7 +1,6 @@
 package com.yuldashov.drive2.service;
 
 import com.yuldashov.drive2.exceptions.InvalidCredentialsException;
-import com.yuldashov.drive2.exceptions.UnautorizedException;
 import com.yuldashov.drive2.exceptions.UserAlreadyExistException;
 import com.yuldashov.drive2.models.User;
 import com.yuldashov.drive2.repository.UserRepository;
@@ -17,26 +16,17 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
+public class UserService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final ResourceService resourceService;
     private final SecurityContextRepository securityContextRepository;
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findUserByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден: " + username));
-    }
 
     @Transactional
     public void register(String username, String rawPassword, HttpServletResponse response,
@@ -70,13 +60,5 @@ public class UserService implements UserDetailsService {
         } catch (BadCredentialsException exception) {
             throw new InvalidCredentialsException("Неверные данные");
         }
-    }
-
-    public User validate(Authentication auth) {
-        Object principal = auth.getPrincipal();
-        if (!(principal instanceof User user)) {
-            throw new UnautorizedException("Вы не авторизованы");
-        }
-        return user;
     }
 }
