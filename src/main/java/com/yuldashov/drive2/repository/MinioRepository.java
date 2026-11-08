@@ -32,7 +32,7 @@ public class MinioRepository {
         );
     }
 
-    public void putObject(String path) throws MinioException {
+    public void createDirectory(String path) throws MinioException {
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(BUCKET_NAME)

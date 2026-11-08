@@ -9,11 +9,7 @@ public class PathUtils {
         boolean isDir = path.endsWith("/");
         path = path.replaceAll("/$", "");
         int slash = path.lastIndexOf("/");
-        if (slash >= 0) {
-            name = path.substring(slash + 1);
-        } else {
-            name = path;
-        }
+        name = slash >=0 ? path.substring(slash + 1) : path;
         if (isDir) {
             return name + "/";
         }
@@ -51,11 +47,7 @@ public class PathUtils {
         boolean isDir = path.endsWith("/");
         path = path.replaceAll("/$", "");
         int slash = path.lastIndexOf("/");
-        if (slash >= 0) {
-            name = path.substring(slash + 1);
-        } else {
-            name = path;
-        }
+        name = slash >= 0 ? path.substring(slash + 1) : path;
         if (isDir) {
             return name + ".zip";
         }

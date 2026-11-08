@@ -10,11 +10,11 @@ import lombok.Setter;
 public class ResponseResource {
     private String path;
     private String name;
-    private Long size;
+    private long size;
     private ResourceType type;
 
 
-    public ResponseResource(String path, String name, Long size) {
+    public ResponseResource(String path, String name, long size) {
         this.path = path;
         this.name = name;
         this.size = size;

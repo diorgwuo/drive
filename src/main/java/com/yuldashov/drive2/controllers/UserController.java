@@ -25,8 +25,7 @@ public class UserController {
             @RequestBody User user,
             HttpServletRequest request,
             HttpServletResponse response) throws MinioException {
-        userService.register(user.getUsername(), user.getPassword(), response, request);
-        return new UserResponse(user.getUsername());
+        return userService.register(user.getUsername(), user.getPassword(), response, request);
     }
 
     @PostMapping("/login")
@@ -36,8 +35,7 @@ public class UserController {
             @RequestBody User user,
             HttpServletRequest request,
             HttpServletResponse response) {
-        userService.login(user.getUsername(), user.getPassword(), response, request);
-        return new UserResponse(user.getUsername());
+        return userService.login(user.getUsername(), user.getPassword(), response, request);
     }
 
     @GetMapping("/get/me")

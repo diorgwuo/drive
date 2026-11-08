@@ -1,5 +1,6 @@
 package com.yuldashov.drive2.service;
 
+import com.yuldashov.drive2.dto.UserResponse;
 import com.yuldashov.drive2.exceptions.InvalidCredentialsException;
 import com.yuldashov.drive2.exceptions.UserAlreadyExistException;
 import com.yuldashov.drive2.models.User;
@@ -29,8 +30,8 @@ public class UserService {
     private final SecurityContextRepository securityContextRepository;
 
     @Transactional
-    public void register(String username, String rawPassword, HttpServletResponse response,
-                         HttpServletRequest request) throws MinioException {
+    public UserResponse register(String username, String rawPassword, HttpServletResponse response,
+                                 HttpServletRequest request) throws MinioException {
         if (userRepository.existsByUsername(username)) {
             throw new UserAlreadyExistException("Username уже занят");
         }
@@ -44,9 +45,10 @@ public class UserService {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         securityContextRepository.saveContext(context, request, response);
+        return new UserResponse(username);
     }
 
-    public void login(String username, String rawPassword,
+    public UserResponse login(String username, String rawPassword,
                       HttpServletResponse response,
                       HttpServletRequest request) {
         try {
@@ -55,8 +57,8 @@ public class UserService {
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
-
             securityContextRepository.saveContext(context, request, response);
+            return new UserResponse(username);
         } catch (BadCredentialsException exception) {
             throw new InvalidCredentialsException("Неверные данные");
         }

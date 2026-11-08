@@ -3,7 +3,6 @@ package com.yuldashov.drive2.service;
 import com.yuldashov.drive2.dto.ResponseResource;
 import com.yuldashov.drive2.exceptions.ResourceAlreadyExistException;
 import com.yuldashov.drive2.exceptions.ResourceNotFoundException;
-import com.yuldashov.drive2.exceptions.UnautorizedException;
 import com.yuldashov.drive2.models.User;
 import com.yuldashov.drive2.repository.MinioRepository;
 import com.yuldashov.drive2.util.PathUtils;
@@ -11,17 +10,18 @@ import io.minio.*;
 import io.minio.errors.MinioException;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -44,10 +44,10 @@ public class ResourceService {
         if (!minioRepository.exists(fullPath)) {
             throw new ResourceNotFoundException("Ресурс не найден");
         }
-        Long size = minioRepository.getObject(fullPath).size();
+        long size = minioRepository.getObject(fullPath).size();
 
         if (!path.endsWith("/")) {
-            minioRepository.putObject(path);
+            minioRepository.createDirectory(path);
             String name = PathUtils.getNameToFileOrDirectory(path);
             String responsePath = PathUtils.getPathResponseToFile(path);
             return new ResponseResource(responsePath, name, size);
@@ -58,7 +58,7 @@ public class ResourceService {
     }
 
     public void createUserBucket(int userId) throws MinioException {
-        minioRepository.putObject("user-" + userId + "-files/");
+        minioRepository.createDirectory(PathUtils.buildPathUserFolder(userId));
     }
 
     public ResponseResource createDirectory(User user, String path) throws MinioException {
@@ -78,7 +78,7 @@ public class ResourceService {
             throw new ResourceAlreadyExistException("Папка уже существует");
         }
 
-        minioRepository.putObject(fullPath);
+        minioRepository.createDirectory(fullPath);
         String nameDirectory = PathUtils.getNameToDirectory(path);
         String responsePath = PathUtils.getPathResponseToDirectory(path);
         return new ResponseResource(responsePath, nameDirectory);
@@ -103,34 +103,32 @@ public class ResourceService {
     public List<ResponseResource> getDirectoryInfo(User user, String path) throws MinioException {
         String userFolder = PathUtils.buildPathUserFolder(user.getId());
         String fullPath = userFolder + "/" + path;
-
         if (!minioRepository.exists(fullPath)) {
             throw new ResourceNotFoundException("Папка не существует");
         }
-
-        List<ResponseResource> responseResources = new ArrayList<>();
         Iterable<Result<Item>> results = minioRepository.listDirectory(fullPath, false);
+        return StreamSupport.stream(results.spliterator(), false)
+                .map(result -> {
+                    try {
+                        return result.get();
 
-        for (Result<Item> result : results) {
-            Item item = result.get();
-            String nameObject = item.objectName();
-            if (nameObject.equals(fullPath)) {
-                continue;
-            }
-
-            String pathOnly = nameObject.substring(userFolder.length() + 1);
-
-            if (nameObject.endsWith("/")) {
-                String name = PathUtils.getNameToDirectory(pathOnly);
-                String responsePath = PathUtils.getPathResponseToDirectory(pathOnly);
-                responseResources.add(new ResponseResource(responsePath, name));
-            } else {
-                String name = PathUtils.getNameToFileOrDirectory(pathOnly);
-                String responsePath = PathUtils.getPathResponseToFile(pathOnly);
-                responseResources.add(new ResponseResource(responsePath, name, item.size()));
-            }
-        }
-        return responseResources;
+                    } catch (MinioException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .filter(item -> !item.objectName().equals(fullPath))
+                .map(item -> {
+                    String nameObject = item.objectName();
+                    String pathOnly = nameObject.substring(userFolder.length() + 1);
+                    if (nameObject.endsWith("/")) {
+                        return new ResponseResource(
+                                PathUtils.getPathResponseToDirectory(pathOnly),
+                                PathUtils.getNameToDirectory(pathOnly));
+                    }
+                    return new ResponseResource(PathUtils.getPathResponseToFile(pathOnly),
+                            PathUtils.getNameToFileOrDirectory(pathOnly));
+                })
+                .toList();
     }
 
     public List<ResponseResource> searchResource(String query, User user) throws MinioException {
@@ -161,11 +159,7 @@ public class ResourceService {
     public ResponseResource moveResource(String from, String to, User user) throws MinioException {
         String userFolder = PathUtils.buildPathUserFolder(user.getId());
         String pathTo;
-        if (from.endsWith("/") && to.endsWith("/")) {
-            pathTo = PathUtils.getPathResponseToDirectory(to);
-        } else {
-            pathTo = PathUtils.getPathResponseToFile(to);
-        }
+        pathTo = from.endsWith("/") && to.endsWith("/") ? PathUtils.getPathResponseToDirectory(to) : PathUtils.getPathResponseToFile(to);
 
         String fullFromPath = userFolder + "/" + from;
         String fullToPath = userFolder + "/" + to;
@@ -179,7 +173,7 @@ public class ResourceService {
         }
 
         if (!pathTo.isEmpty()) {
-            minioRepository.putObject(userFolder + "/" + pathTo);
+            minioRepository.createDirectory(userFolder + "/" + pathTo);
         }
 
         if (to.endsWith("/")) {
@@ -220,7 +214,7 @@ public class ResourceService {
         }
 
         if (!minioRepository.exists(to)) {
-            minioRepository.putObject(to);
+            minioRepository.createDirectory(to);
         }
     }
 
@@ -265,7 +259,7 @@ public class ResourceService {
         }
     }
 
-    public void downloadResource(String path, User user, OutputStream stream) throws MinioException, IOException {
+    public void downloadResource(String path, User user, OutputStream stream, HttpServletResponse response) throws MinioException, IOException {
         String userFolder = PathUtils.buildPathUserFolder(user.getId());
         String fullPath = userFolder + "/" + path;
 
@@ -278,6 +272,8 @@ public class ResourceService {
         } else {
             downloadFile(fullPath, stream);
         }
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + PathUtils.getNameForZip(path) + "\"");
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
     }
 
     private void downloadFile(String fullPath, OutputStream stream) throws MinioException, IOException {
