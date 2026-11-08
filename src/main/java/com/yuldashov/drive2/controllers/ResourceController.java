@@ -110,6 +110,8 @@ public class ResourceController {
             String path,
             HttpServletResponse response,
             @AuthenticationPrincipal User user) throws MinioException, IOException {
-        resourceService.downloadResource(path, user, response.getOutputStream(), response);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + PathUtils.getNameForZip(path) + "\"");
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        resourceService.downloadResource(path, user, response.getOutputStream());
     }
 }
