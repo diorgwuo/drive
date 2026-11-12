@@ -3,13 +3,10 @@ package com.yuldashov.drive2.controllers;
 import com.yuldashov.drive2.dto.ResponseResource;
 import com.yuldashov.drive2.models.User;
 import com.yuldashov.drive2.service.ResourceService;
-import com.yuldashov.drive2.util.PathUtils;
-import io.minio.errors.MinioException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,7 +27,7 @@ public class ResourceController {
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
             @AuthenticationPrincipal User user
-    ) throws MinioException {
+    ) {
         return resourceService.getResource(user, path);
     }
 
@@ -40,7 +37,7 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            @AuthenticationPrincipal User user) throws MinioException {
+            @AuthenticationPrincipal User user) {
         return resourceService.createDirectory(user, path);
     }
 
@@ -54,7 +51,7 @@ public class ResourceController {
             @NotBlank(message = "Название файла не может быть пустым")
             String filename,
             HttpServletRequest request,
-            @AuthenticationPrincipal User user) throws MinioException, IOException {
+            @AuthenticationPrincipal User user) throws IOException {
         return resourceService.uploadResource(user, path, filename,
                 request.getInputStream(), request.getContentLengthLong());
     }
@@ -65,7 +62,7 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            @AuthenticationPrincipal User user) throws MinioException {
+            @AuthenticationPrincipal User user) {
         return resourceService.getDirectoryInfo(user, path);
     }
 
@@ -75,7 +72,7 @@ public class ResourceController {
             @RequestParam("query")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String query,
-            @AuthenticationPrincipal User user) throws MinioException {
+            @AuthenticationPrincipal User user) {
         return resourceService.searchResource(query, user);
     }
 
@@ -88,7 +85,7 @@ public class ResourceController {
             @RequestParam("to")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String to,
-            @AuthenticationPrincipal User user) throws MinioException {
+            @AuthenticationPrincipal User user) {
         return resourceService.moveResource(from, to, user);
     }
 
@@ -98,7 +95,7 @@ public class ResourceController {
             @RequestParam("path")
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
-            @AuthenticationPrincipal User user) throws MinioException {
+            @AuthenticationPrincipal User user) {
         resourceService.deleteResource(path, user);
     }
 
@@ -109,9 +106,7 @@ public class ResourceController {
             @NotBlank(message = "Путь невалидный или отсутствует")
             String path,
             HttpServletResponse response,
-            @AuthenticationPrincipal User user) throws MinioException, IOException {
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + PathUtils.getNameForZip(path) + "\"");
-        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        resourceService.downloadResource(path, user, response.getOutputStream());
+            @AuthenticationPrincipal User user) throws IOException {
+        resourceService.downloadResource(path, user, response.getOutputStream(), response);
     }
 }

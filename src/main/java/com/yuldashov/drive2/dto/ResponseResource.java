@@ -5,14 +5,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
-@Setter
-@NoArgsConstructor
 public class ResponseResource {
     private String path;
     private String name;
     private long size;
     private ResourceType type;
-
 
     public ResponseResource(String path, String name, long size) {
         this.path = path;

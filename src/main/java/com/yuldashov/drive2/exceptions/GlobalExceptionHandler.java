@@ -36,7 +36,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAll(Exception exception) {
         log.error("Unhandled exception", exception);
         ErrorResponse errorResponse = new ErrorResponse(
-
                 500,
                 "Неизвестная ошибка"
         );
@@ -92,6 +91,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidFile(InvalideFileException exception) {
         ErrorResponse errorResponse = new ErrorResponse(
                 400,
+                exception.getMessage()
+        );
+        return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);
+    };
+
+    @ExceptionHandler(MinioStorageException.class)
+    public ResponseEntity<ErrorResponse> handleMinioStorageException(MinioStorageException exception) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                500,
                 exception.getMessage()
         );
         return new ResponseEntity<>(errorResponse,HttpStatus.BAD_REQUEST);

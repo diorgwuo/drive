@@ -15,8 +15,8 @@ import java.util.List;
 @Entity
 @Table(name="users")
 @NoArgsConstructor
+@Getter
 public class User implements UserDetails {
-    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
@@ -30,26 +30,9 @@ public class User implements UserDetails {
     @Size(min = 5, message = "Password состоит от 5 до 20 символов")
     @Column(nullable = false)
     private String password;
-    @Column(nullable = false)
-    private boolean enabled = true;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
     }
 }

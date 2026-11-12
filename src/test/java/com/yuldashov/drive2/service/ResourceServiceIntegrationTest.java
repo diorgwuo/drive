@@ -1,6 +1,5 @@
 package com.yuldashov.drive2.service;
 
-
 import com.yuldashov.drive2.dto.ResponseResource;
 import com.yuldashov.drive2.exceptions.ResourceNotFoundException;
 import com.yuldashov.drive2.models.User;
@@ -15,8 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,6 +26,8 @@ import java.util.List;
 
 @RequiredArgsConstructor
 public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
+    private static final String USERNAME = "testUser";
+    private static final String PASSWORD = "testuser";
 
     private ResourceService resourceService;
     private MinioClient minioClient;
@@ -46,12 +45,10 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         cleanUsers();
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
-        userService.register("testUser", "testuser", response, request);
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                testUser, null);
+        userService.register(USERNAME, PASSWORD, response, request);
         testUser = new User();
-        testUser.setUsername("testUser");
-        testUser.setPassword("testuser");
+        testUser.setUsername(USERNAME);
+        testUser.setPassword(PASSWORD);
 
         userFolder = "user-" + testUser.getId() + "-files";
     }
@@ -199,7 +196,7 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     public void searchUserFilesShouldCorrect() throws MinioException, IOException {
         MockHttpServletRequest request2 = new MockHttpServletRequest();
         MockHttpServletResponse response2 = new MockHttpServletResponse();
-        userService.register("testUser2", "testuser" , response2, request2);
+        userService.register("testUser2", "testuser", response2, request2);
         User testUser2 = new User();
         testUser2.setUsername("testUser2");
         testUser2.setPassword("testuser");
