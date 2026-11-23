@@ -11,6 +11,7 @@ import io.minio.errors.MinioException;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -34,7 +35,6 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     private UserService userService;
     private MinioRepository minioRepository;
     private UserRepository userRepository;
-    private CustomUserDetailsService userDetailsService;
 
     private User testUser;
     private String userFolder;
@@ -77,7 +77,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void fileUpload() throws MinioException, IOException {
+    @DisplayName("Проверка загрузки файла")
+    public void fileUpload() throws MinioException {
         String path = "test1/";
         String content = "test1234";
         String filename = "test.txt";
@@ -101,7 +102,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void renameResource() throws MinioException, IOException {
+    @DisplayName("Проверка переименования файла")
+    public void renameResource() {
         String from = "test1/test.txt";
         String to = "test1/dior.txt";
 
@@ -119,7 +121,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void deleteFile() throws MinioException, IOException {
+    @DisplayName("Проверка удаления файла")
+    public void deleteFile() {
         String path = "test1/test.txt";
         String fullPath = userFolder + "/" + path;
 
@@ -139,7 +142,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void deleteDirectory() throws MinioException, IOException {
+    @DisplayName("Проверка удаления папки")
+    public void deleteDirectory() {
         String parentPath = "test1/";
         resourceService.createDirectory(testUser, parentPath);
 
@@ -167,7 +171,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void checkAccess() throws MinioException, IOException {
+    @DisplayName("Проверка доступа пользователя")
+    public void checkAccess() throws MinioException {
         MockHttpServletRequest request2 = new MockHttpServletRequest();
         MockHttpServletResponse response2 = new MockHttpServletResponse();
         User testUser2 = new User();
@@ -193,7 +198,8 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void searchUserFilesShouldCorrect() throws MinioException, IOException {
+    @DisplayName("Поиск не должен находить файлы других пользователей")
+    public void searchResourceShouldReturnOwnFiles() throws MinioException {
         MockHttpServletRequest request2 = new MockHttpServletRequest();
         MockHttpServletResponse response2 = new MockHttpServletResponse();
         userService.register("testUser2", "testuser", response2, request2);
@@ -203,7 +209,7 @@ public class ResourceServiceIntegrationTest extends AbstractIntegrationTest {
         String userFolder2 = "user-" + testUser2.getId() + "-files";
 
         String content = "dior1234";
-        String filename = "test.txt";
+        String filename = "dior.txt";
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream stream = new ByteArrayInputStream(contentBytes);
 

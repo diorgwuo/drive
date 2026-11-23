@@ -5,6 +5,7 @@ import com.yuldashov.drive2.models.User;
 import com.yuldashov.drive2.repository.UserRepository;
 import com.yuldashov.drive2.support.AbstractIntegrationTest;
 import io.minio.errors.MinioException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -28,6 +29,7 @@ public class UserServiceIntegrationTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Test
+    @DisplayName("Создание сервера должно создавать новую запись в таблице users")
     public void saveUser() throws MinioException {
         User user = new User();
         user.setUsername(USERNAME);
@@ -44,6 +46,7 @@ public class UserServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Пароль должен быть зашифрован")
     public void passwordShouldEncoded() throws MinioException {
         userService.register("testPassword", "password1256", response, request);
         Optional<User> savedUser = userRepository.findUserByUsername("testPassword");
@@ -53,6 +56,7 @@ public class UserServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("Создание пользователя с неуникальным username должно приводить к ошибке")
     public void usernameShouldBeUnique() throws MinioException {
         userService.register("user1", "user1235", response, request);
         MockHttpServletRequest request2 = new MockHttpServletRequest();
